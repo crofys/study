@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>分片上传</title>
+  </head>
+  <body>
+    <input id="upload" type="file" />
+    <button id="btn">上传</button>
+
+    <script>
+      const btnNode = document.querySelector("#btn");
+      const uploadNode = document.querySelector("#upload");
+      const chunkSize = 1024 * 10; // 切片大小
+      let index = 0; // 切片索引
+
+      btnNode.addEventListener("click", upload);
+
+      function upload(params) {
+        const start = index * chunkSize;
+        const file = uploadNode.files[0];
+        const [fileName, ext] = file.name.split(".");
+
+        if (start > file.size) return;
+
+        const blob = file.slice(start, start + chunkSize);
+        const blobName = `${fileName}-${index}.${ext}`;
+        const blobFile = new File([blob], blobName);
+
+        const formData = new FormData();
+        formData.append("file", blobFile);
+        formData.append("chunkSize", chunkSize);
+        formData.append("index", index);
+
+        fetch("/api/upload", {
+          method: "post",
+          body: formData,
+        }).then(() => {
+          console.log("上传分片成功", blobName);
+          index++;
+          upload();
+        });
+      }
+    </script>
+  </body>
+</html>
